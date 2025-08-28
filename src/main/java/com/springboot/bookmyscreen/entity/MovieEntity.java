@@ -14,6 +14,7 @@ import java.util.Set;
 public class MovieEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     private String name;

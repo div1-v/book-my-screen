@@ -12,6 +12,7 @@ import lombok.*;
 public class SeatEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     private int seat_number;

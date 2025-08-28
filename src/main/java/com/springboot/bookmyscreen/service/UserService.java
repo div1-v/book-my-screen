@@ -1,63 +1,42 @@
 package com.springboot.bookmyscreen.service;
 
-import com.springboot.bookmyscreen.dto.UserLoginRequest;
-import com.springboot.bookmyscreen.dto.UserLoginResponse;
 import com.springboot.bookmyscreen.dto.UserSignupRequest;
 import com.springboot.bookmyscreen.dto.UserSignupResponse;
 import com.springboot.bookmyscreen.entity.UserEntity;
+import com.springboot.bookmyscreen.exception.DuplicateResourceException;
 import com.springboot.bookmyscreen.repository.UserRepository;
-import com.springboot.bookmyscreen.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class UserService {
 
-    private final UserRepository userRepository;
-    private final JwtUtil jwtUtil;
-    private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-    private String ENCRYPTION_KEY = "1234567890123456";
+    @Autowired
+    private UserRepository userRepository;
 
-    public UserService(UserRepository userRepository, JwtUtil jwtUtil) {
-        this.userRepository = userRepository;
-        this.jwtUtil = jwtUtil;
-    }
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
-    public UserSignupResponse signup(UserSignupRequest request){
-        boolean isPresent = userRepository.findByEmail(request.getEmail()).isPresent();
-        if(isPresent){
-            throw new RuntimeException("User already exists");
+    @Autowired
+    private JwtService jwtService;
+
+    public UserSignupResponse signup(UserSignupRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new DuplicateResourceException("User", "email", request.getEmail());
         }
-        UserEntity user = new UserEntity();
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole("USER");
-        userRepository.save(user);
-        String token = jwtUtil.generateToken(request.getEmail());
-        UserSignupResponse userSignupResponse = new UserSignupResponse();
-        userSignupResponse.setToken(token);
-        userSignupResponse.setName(user.getName());
-        userSignupResponse.setEmail(user.getEmail());
-        userSignupResponse.setRole(user.getRole());
-        return userSignupResponse;
+        
+        UserEntity userEntity = new UserEntity();
+        userEntity.setName(request.getName());
+        userEntity.setEmail(request.getEmail());
+        userEntity.setPassword(passwordEncoder.encode(request.getPassword()));
+        userEntity.setRole("USER");
+        userRepository.save(userEntity);
 
-    }
-
-    public UserLoginResponse login(UserLoginRequest request){
-        UserEntity user = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new RuntimeException("User does not exist"));
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
-        }
-
-        String token = jwtUtil.generateToken(user.getEmail());
-        UserLoginResponse response = new UserLoginResponse();
-        response.setToken(token);
-        response.setName(user.getName());
-        response.setEmail(user.getEmail());
-        response.setRole(user.getRole());
-        return response;
+        String token = jwtService.issue(request.getEmail());
+        
+        return new UserSignupResponse(token, request.getName(), request.getEmail(), "USER");
     }
 }
