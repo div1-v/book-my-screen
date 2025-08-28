@@ -77,6 +77,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    @ExceptionHandler(ReservationConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleReservationConflictException(ReservationConflictException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("error", "Reservation Conflict");
+        errorResponse.put("message", ex.getMessage());
+        errorResponse.put("status", HttpStatus.CONFLICT.value());
+        
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, Object>> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex) {
         Map<String, Object> errorResponse = new HashMap<>();

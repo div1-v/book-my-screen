@@ -21,7 +21,7 @@ public class ShowController {
     private ShowService showService;
 
     @PostMapping
-    //@PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CreateShowResponse> createShow(@Valid @RequestBody CreateShowRequest request) {
         CreateShowResponse showResponse = showService.createShow(request);
         return ResponseEntity.ok(showResponse);
